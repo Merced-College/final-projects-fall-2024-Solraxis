@@ -1,3 +1,11 @@
+/* 
+ * Title: DeckList Buddy a.k.a. Kevin's Super Awesome Magic: the Gathering Tool
+ * Date: 12.6.2024
+ * Class: CPSC-039, Kathy Kanemoto
+ * Ver: 1.0
+ * Displays information in the console for either a specified card, or a decklist.
+ */
+
 package DeckListBuddy;
 
 import com.google.gson.stream.JsonReader;
@@ -6,12 +14,10 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.InputMismatchException;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.io.File;
-import java.io.FileNotFoundException;
 
 public class Main {
     public static Scanner input = new Scanner(System.in);
@@ -22,7 +28,7 @@ public class Main {
         boolean doLoop = true; //Used in tryAgain() when user is asked if they would like to search another card
 
         while(doLoop){ //Main function loop
-        System.out.println("Welcome to Kevin's Super Mmazing Magic: the Gathering Tool!\nPlease choose a function to start.  Type 'Card' for card analysis or 'Deck' for deck analysis.");
+        System.out.println("Welcome to Kevin's Super Amazing Magic: the Gathering Tool!\nPlease choose a function to start.  Type 'Card' for card analysis or 'Deck' for deck analysis.");
         String r = input.nextLine();
         if(r.equalsIgnoreCase("card")){
             System.out.println("Search a card: ");
@@ -66,13 +72,14 @@ public class Main {
                 System.out.println(count++ + ": " + cards.get(nameId).getName() + "  " + cards.get(nameId).getType_line());
                 System.out.println("Mana Cost: [" + cards.get(nameId).getMana_cost() + "] Set: " + cards.get(nameId).getSet_name() + "\n");
                 averageManaValue += cards.get(nameId).getMana_value();
-                //averagePriceUSD += Double.parseDouble(cards.get(nameId).prices.getUsd()); //price data is stored as strings, so I have to parse the string to use the number
+                averagePriceUSD += cards.get(nameId).prices.getUsd(); //price data is stored as strings, so I have to parse the string to use the number
 
             }
             averageManaValue = averageManaValue/deckNameIds.size(); //divide sum by total to get average
-            //averagePriceUSD = averagePriceUSD/deckNameIds.size();
+            averagePriceUSD = averagePriceUSD/deckNameIds.size();
 
             System.out.println("Average Mana Value: " + averageManaValue);
+            System.out.println("Average Price USD: " + averagePriceUSD);
            
         }
         else {
@@ -83,6 +90,16 @@ public class Main {
         }//end doLoop
     }
 
+
+/***************************************************************************************
+*    Title: Regex String Parser
+*    Author: Kevin Leuthold, ChatGPT
+*    Date: Dec. 5, 2024
+*    Code version: 1.0
+*    Availability: Used ChatGPT to assist with writing the regex statement, as well as using the java.regex functions such as Pattern and Matcher.  
+*
+***************************************************************************************/
+    
     public static ArrayList<String[]> readDeck(HashMap<String[], Card> cards){
         ArrayList<String[]> cardNameIds = new ArrayList<String[]>();//Contains 1 nameId per entry per card per quantity (4x Card name -> 4 entries of Card name)
         int t = 0;
@@ -112,6 +129,8 @@ public class Main {
         System.out.println("Card name: " + cards.get(cardQueries.get(cardToChoose)).getName() + "  " + cards.get(cardQueries.get(cardToChoose)).getType_line());
         System.out.println("Mana Cost: [" + cards.get(cardQueries.get(cardToChoose)).getMana_cost() + "] Set: " + cards.get(cardQueries.get(cardToChoose)).getSet_name());
         System.out.println("Artist: " + cards.get(cardQueries.get(cardToChoose)).getArtist() + "  Rarity: " + cards.get(cardQueries.get(cardToChoose)).getRarity());
+        
+        //Certain cards have certain attributes, which need to be displayed in certain ways.  Creatures have health and attack, planeswalkers have loyalty, etc.
         if(cards.get(cardQueries.get(cardToChoose)).getType_line().contains("Creature")){
             System.out.println(cards.get(cardQueries.get(cardToChoose)).getPower() + " / " + cards.get(cardQueries.get(cardToChoose)).getToughness());
         }
@@ -139,7 +158,7 @@ public class Main {
     public static ArrayList<String[]> searchCard(String cardQuery, HashMap<String[], Card> cards){
         ArrayList<String[]> cardQueries = new ArrayList<String[]>();
         for(String[] nameIds : cards.keySet()){
-            if(nameIds[0].contains(cardQuery)){
+            if(nameIds[0].toLowerCase().contains(cardQuery.toLowerCase())){
                 cardQueries.add(nameIds);
             }
         }
@@ -162,6 +181,16 @@ public class Main {
         } 
     }
 
+
+    /***************************************************************************************
+*    Title: objectizeCards() using google GSON library
+*    Author: mkyong
+*    Date: May 6, 2024
+*    Code version: 1.0
+*    Availability: https://mkyong.com/java/read-and-write-json-to-file-using-gson/
+*    Notes: Adapted this person's code/tutorial to fit with my code.  They used the same switch style statement I did, however I expanded greatly on what was listed on the website.
+*
+***************************************************************************************/
     public static HashMap<String[], Card> objectizeCards(){
         HashMap<String[], Card> cards = new HashMap<String[], Card>();
         try (JsonReader reader = new JsonReader(new FileReader("oracle-cards.json"))) {
@@ -772,8 +801,8 @@ public class Main {
                             String p_name = reader.nextName();
                             switch (p_name){
                                 case "usd":
-                                    if(reader.peek() == JsonToken.NULL){
-                                        card.prices.setUsd("null");
+                                    if(reader.peek() == JsonToken.NULL){ //reader.peek() looks at the next token to be read and will return the type. Checking for null to avoid errors.
+                                        card.prices.setUsd("0.0");
                                         reader.nextNull();
                                     }else{
                                         card.prices.setUsd(reader.nextString());
@@ -782,7 +811,7 @@ public class Main {
                         
                                 case "usd_foil":
                                     if(reader.peek() == JsonToken.NULL){
-                                        card.prices.setUsd_foil("null");
+                                        card.prices.setUsd_foil("0.0");
                                         reader.nextNull();
                                     }else{
                                         card.prices.setUsd_foil(reader.nextString());
@@ -791,7 +820,7 @@ public class Main {
 
                                 case "usd_etched":
                                     if(reader.peek() == JsonToken.NULL){
-                                        card.prices.setUsd_etched("null");
+                                        card.prices.setUsd_etched("0.0");
                                         reader.nextNull();
                                     }else{
                                         card.prices.setUsd_etched(reader.nextString());
@@ -800,7 +829,7 @@ public class Main {
 
                                 case "eur":
                                     if(reader.peek() == JsonToken.NULL){
-                                        card.prices.setEur("null");
+                                        card.prices.setEur("0.0");
                                         reader.nextNull();
                                     }else{
                                         card.prices.setEur(reader.nextString());
@@ -809,7 +838,7 @@ public class Main {
 
                                 case "eur_foil":
                                     if(reader.peek() == JsonToken.NULL){
-                                        card.prices.setEur_foil("null");
+                                        card.prices.setEur_foil("0.0");
                                         reader.nextNull();
                                     }else{
                                         card.prices.setEur_foil(reader.nextString());
@@ -818,7 +847,7 @@ public class Main {
 
                                 case "eur_etched":
                                     if(reader.peek() == JsonToken.NULL){
-                                        card.prices.setEur_etched("null");
+                                        card.prices.setEur_etched("0.0");
                                         reader.nextNull();
                                     }else{
                                         card.prices.setEur_etched(reader.nextString());
@@ -827,7 +856,7 @@ public class Main {
 
                                 case "tix":
                                     if(reader.peek() == JsonToken.NULL){
-                                        card.prices.setTix("null");
+                                        card.prices.setTix("0.0");
                                         reader.nextNull();
                                     }else{
                                         card.prices.setTix(reader.nextString());
@@ -982,7 +1011,7 @@ public class Main {
                         
                     } // end switch
                 } // end name While
-                cards.put(card.getNameId(), card);
+                cards.put(card.getNameId(), card); //Hashes based on nameId, a String array of names, along with the unique Scryfall id of the card.
                 reader.endObject();
             } // end object while
             
@@ -995,3 +1024,5 @@ public class Main {
         return cards;
     }
 }
+
+
